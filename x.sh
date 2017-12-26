@@ -1,5 +1,5 @@
 #!/bin/sh
-
+#rev1
 # Change this to match your machine setup.
 echo 'Write Johns machine specific custom rc.conf to file.'
 echo '\
