@@ -1,4 +1,5 @@
 #!/bin/sh -u
+#rev1
 
 echo "==> Recording box generation date";
 date > /etc/build_date 
