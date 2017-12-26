@@ -1,7 +1,6 @@
 #!/bin/sh -u
-
-echo "==> Enable NFS and set hostname";
-# As sharedfolders are not in defaults ports tree, we will use NFS sharing
+#rev1
+echo "==> set hostname";
 cat >>/etc/rc.conf << RC_CONF
 hostname="$HOSTNAME"
 RC_CONF
