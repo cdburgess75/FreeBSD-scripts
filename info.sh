@@ -1,15 +1,5 @@
 #!/usr/local/bin/bash
 
-# based on the work of pidsley/codemangler and screenFetch.
-# https://github.com/pidsley/codemangler
-# https://github.com/KittyKatt/screenFetch
-
-# simple screen information script
-# similar to archey and screenfetch without annoying ASCII graphics
-
-# this script is provided with NO GUARANTEE and NO SUPPORT 
-# if it breaks or does not do what you want, FIX IT YOURSELF
-
 VERSION="0.1"
 
 # define colors for color-echo
