@@ -1,6 +1,6 @@
 
 #!/usr/local/bin/bash
-
+#rev1
 userName="$(id -un)"
 destFile="/usr/home/$userName/Desktop/networkHosts.txt"
 
