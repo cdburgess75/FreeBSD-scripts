@@ -1,5 +1,5 @@
 #!/bin/csh
-
+echo "==>bhyve prerequisites"
 kldload vmm
 kldload nmdm
 ifconfig tap0 create
