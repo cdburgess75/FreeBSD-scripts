@@ -1,3 +1,8 @@
+hostname
+domain
+certpath
+certkeypath
+
 pkg update -f
 pkg upgrade -f
 pkg install -y ap24-mod_security apache24 apr arc arj autoconf autoconf-wrapper automake automake-wrapper bash bison ca_root_nss cclient clamav-milter cmake cmake-modules-webos kf5-extra-cmake-modules curl cvsps davical db5 dialog4ports dovecot-pigeonhole dovecot expat ezjail freetype2 gdbm gettext-runtime gettext-tools git gmake gnupg1 help2man icu indexinfo jpeg-turbo json-c jsoncpp kbproto ldns lha libICE libSM libX11 libXau libXaw libXdmcp libXext libXmu libXp libXpm libXt libarchive libedit libevent libffi libiconv libidn libltdl liblz4 libmcrypt libpthread-stubs libspf2 libtool libuv libxcb libxml2 libzip lua52 lzo2 m4 mod_php56 munin-common mysql56-client mysql56-server nano oniguruma5 opendkim opendmarc p5-Algorithm-C3 p5-Authen-NTLM p5-Authen-SASL p5-B-Hooks-EndOfScope p5-BerkeleyDB p5-Bit-Vector p5-Cache p5-Cache-Cache p5-Carp-Clan p5-Class-c3 p5-Class-Data-Inheritable p5-Class-Inspector p5-Class-Method-Modifiers p5-Class-Singleton p5-Crypt-CBC p5-Crypt-DES p5-Crypt-OpenSSL-Bignum p5-Crypt-OpenSSL-RSA p5-Crypt-OpenSSL-Random p5-DBD-Pg p5-DBD-mysql p5-DBI p5-Data-OptList p5-Date-Calc p5-DateTime p5-DateTime-HiRes p5-DateTime-Locale p5-DateTime-TimeZone p5-Devel-StackTrace
@@ -39,3 +44,21 @@ echo 'clamav_clamd_enable="YES"' >> /etc/rc.conf
 echo 'clamav_freshclam_enable="YES"' >> /etc/rc.conf
 echo 'clamav_milter_enable="YES"' >> /etc/rc.conf
 echo 'loginscript_enable="YES"' >> /etc/rc.conf
+
+
+cat /usr/local/etc/apache24/httpd.conf | grep ServerName
+echo "ServerName $hostname.$domain" >> /usr/local/etc/apache24/httpd.conf
+cat /usr/local/etc/apache24/httpd.conf | grep ServerName
+
+cp /usr/local/etc/php.ini-production /usr/local/etc/php.ini
+
+cat /usr/local/etc/php.ini | grep date.timezone
+echo "date.timezone = UTC" >> /usr/local/etc/php.ini
+cat /usr/local/etc/php.ini | grep date.timezone
+
+mkdir -p /etc/skel/Maildir/{cur,new,tmp}
+mkdir -p /usr/local/vhosts
+mkdir -p /usr/local/etc/postfix/keys
+
+cp $cerykeypath /usr/local/etc/postfix/keys/server.crt
+cp $certpath /usr/local/etc/postfix/keys/server.key
