@@ -62,3 +62,193 @@ mkdir -p /usr/local/etc/postfix/keys
 
 cp $cerykeypath /usr/local/etc/postfix/keys/server.crt
 cp $certpath /usr/local/etc/postfix/keys/server.key
+
+pw groupadd -n vmail -g 5000
+pw adduser -n vmail -c "Virtual mail user" -u 5000 -g 5000 -d /usr/local/vhosts -s /usr/sbin/nologin
+
+chown -R vmail:vmail /usr/local/vhosts/
+chown -R vmail:dovecot /usr/local/etc/dovecot/
+chmod -R o-rwx /usr/local/etc/dovecot/
+
+touch /var/log/dovecot.log
+chown vmail:vmail /var/log/dovecot.log
+
+cat /usr/local/etc/dovecot/dovecot.conf
+
+touch /usr/local/etc/dovecot/dovecot.conf
+
+echo "auth_mechanisms = plain login
+auth_verbose = yes
+default_client_limit = 2560
+default_process_limit = 512
+dict {
+  acl = mysql:/usr/local/etc/dovecot/dovecot-dict-sql.conf.ext
+  quota = mysql:/usr/local/etc/dovecot/dovecot-dict-sql.conf.ext
+}
+log_path = /var/log/dovecot.log
+mail_home = /usr/local/vhosts/mail/%d/%n
+mail_location = maildir:/usr/local/vhosts/mail/%d/%n:LAYOUT=fs
+mail_max_userip_connections = 20
+mail_plugins = quota acl
+mail_privileged_group = vmail
+mail_shared_explicit_inbox = yes
+managesieve_notify_capability = mailto
+managesieve_sieve_capability = fileinto reject envelope encoded-character vacation subaddress comparator-i;ascii-numeric relational regex imap4flags copy include variables body enotify environment mailbox date index ihave duplicate mime foreverypart extracttext
+mbox_write_locks = fcntl
+namespace {
+  inbox = no
+  list = children
+  location = maildir:/usr/local/vhosts/mail/%%d/%%n:LAYOUT=fs:INDEX=/usr/local/vhosts/indexes/%d/%n/shared/%%u:INDEXPVT=/usr/local/vhosts/indexes/%d/%n/shared/%%u
+  prefix = shared/%%d/%%n/
+  separator = /
+  subscriptions = no
+  type = shared
+}
+namespace inbox {
+  inbox = yes
+  list = yes
+  location =
+  mailbox Drafts {
+    auto = subscribe
+    special_use = \Drafts
+  }
+  mailbox Junk {
+    auto = subscribe
+    special_use = \Junk
+  }
+  mailbox Sent {
+    auto = subscribe
+    special_use = \Sent
+  }
+  mailbox Trash {
+    auto = subscribe
+    special_use = \Trash
+  }
+  prefix =
+  separator = /
+  type = private
+}
+passdb {
+  args = /usr/local/etc/dovecot/dovecot-sql.conf.ext
+  driver = sql
+}
+plugin {
+  acl = vfile
+  acl_shared_dict = proxy::acl
+  quota = dict:User quota::proxy::quota
+  quota_rule2 = Trash:storage=+100M
+  sieve = /usr/local/vhosts/mail/%d/%n/.dovecot.sieve
+  sieve_before = /usr/local/vhosts/sieve/before.d/
+  sieve_dir = /usr/local/vhosts/mail/%d/%n
+  sieve_global_dir = /usr/local/vhosts/sieve/%d
+  sieve_global_path = /usr/local/vhosts/sieve/%d/default.sieve
+}
+protocols = imap lmtp sieve
+service auth-worker {
+  user = vmail
+}
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    group = postfix
+    mode = 0660
+    user = postfix
+  }
+  unix_listener auth-userdb {
+    mode = 0600
+    user = vmail
+  }
+  user = dovecot
+}
+service dict {
+  unix_listener dict {
+    mode = 0600
+    user = vmail
+  }
+}
+service imap-login {
+  inet_listener imap {
+    port = 143
+  }
+}
+service lmtp {
+  unix_listener /var/spool/postfix/private/dovecot-lmtp {
+    group = postfix
+    mode = 0660
+    user = postfix
+  }
+}
+service managesieve-login {
+  inet_listener sieve {
+    port = 4190
+  }
+  process_min_avail = 0
+  service_count = 1
+  vsz_limit = 64 M
+}
+ssl_cert = </usr/local/etc/postfix/keys/server.crt
+ssl_key =  </usr/local/etc/postfix/keys/server.key
+userdb {
+  args = /usr/local/etc/dovecot/dovecot-sql.conf.ext
+  driver = sql
+}
+protocol lmtp {
+  mail_plugins = quota acl sieve
+}
+protocol lda {
+  mail_plugins = quota acl sieve acl
+  postmaster_address = root
+}
+protocol imap {
+  imap_client_workarounds = tb-extra-mailbox-sep
+  mail_plugins = quota acl imap_quota imap_acl
+}" >> /usr/local/etc/dovecot/dovecot.conf
+
+touch /usr/local/etc/dovecot/dovecot-dict-sql.conf.ext
+
+echo "connect = host=127.0.0.1 dbname=mailserver user=mailadmin password=< password >
+map {
+  pattern = priv/quota/storage
+  table = quota2
+  username_field = username
+  value_field = bytes
+}
+ 
+map {
+  pattern = priv/quota/messages
+  table = quota2
+  username_field = username
+  value_field = messages
+}
+ 
+map {
+  pattern = shared/shared-boxes/user/$to/$from
+  table = user_shares
+  value_field = dummy
+  
+  fields {
+    from_user = $from
+    to_user = $to
+  }
+}
+  
+map {
+  pattern = shared/shared-boxes/anyone/$from
+  table = anyone_shares
+  value_field = dummy
+  
+  fields {
+    from_user = $from
+  }
+}" >> /usr/local/etc/dovecot/dovecot-dict-sql.conf.ext
+
+touch /usr/local/etc/dovecot/dovecot-sql.conf.ext
+
+echo "driver = mysql
+connect = host=127.0.0.1 dbname=mailserver user=mailuser password=< password >
+default_pass_scheme = SHA512-CRYPT
+user_query = SELECT CONCAT('*:messages=1000000:bytes=', quota) as quota_rule, 5000 AS uid, 5000 AS gid FROM mailbox WHERE username = '%u' AND active = '1'
+password_query = SELECT username as user, password FROM mailbox WHERE username = '%u' AND active = '1'
+iterate_query = SELECT username AS user FROM mailserver.mailbox" >> /usr/local/etc/dovecot/dovecot-sql.conf.ext
+
+mv /usr/local/etc/postfix/main.cf{,.orig}
+mv /usr/local/etc/postfix/master.cf{,.orig}
